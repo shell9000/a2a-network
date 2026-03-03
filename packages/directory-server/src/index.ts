@@ -12,10 +12,9 @@ function generateApiKey(): string {
 
 // 生成 Agent ID
 function generateAgentId(name: string): string {
-  const timestamp = Date.now();
-  const random = randomBytes(4).toString('hex');
-  const safeName = name.toLowerCase().replace(/[^a-z0-9]/g, '-');
-  return `${safeName}-${timestamp}-${random}`;
+  const random = randomBytes(3).toString('hex'); // 6 個字符
+  const safeName = name.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 20);
+  return `${safeName}-${random}`;
 }
 
 /**
