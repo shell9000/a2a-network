@@ -17,6 +17,8 @@ interface ConnectedClient {
   socket: WebSocket;
   agentId: string;
   apiKey: string;
+  messageCount: number;
+  lastMessageTime: number;
 }
 
 // 存儲所有連接的客戶端
@@ -89,7 +91,13 @@ async function handleWebSocket(request: Request, env: Env): Promise<Response> {
           const isValid = await verifyApiKey(agentId, apiKey, env);
           
           if (isValid) {
-            clients.set(agentId, { socket: server, agentId, apiKey });
+            clients.set(agentId, { 
+              socket: server, 
+              agentId, 
+              apiKey,
+              messageCount: 0,
+              lastMessageTime: Date.now()
+            });
             server.send(JSON.stringify({
               type: 'auth_success',
               agentId
@@ -104,6 +112,24 @@ async function handleWebSocket(request: Request, env: Env): Promise<Response> {
           break;
 
         case 'message':
+          // 檢查 Rate Limit
+          if (!checkRateLimit(agentId)) {
+            server.send(JSON.stringify({
+              type: 'error',
+              error: 'Rate limit exceeded. Max 10 messages per minute.'
+            }));
+            break;
+          }
+          
+          // 檢查訊息大小
+          if (data.content && data.content.length > 10240) {
+            server.send(JSON.stringify({
+              type: 'error',
+              error: 'Message too large. Max 10KB.'
+            }));
+            break;
+          }
+          
           // 轉發訊息
           await handleMessage(data, agentId, apiKey, env);
           break;
@@ -188,6 +214,30 @@ async function handleMessage(data: any, fromAgentId: string | null, apiKey: stri
       }));
     }
   }
+}
+
+function checkRateLimit(agentId: string | null): boolean {
+  if (!agentId) return false;
+  
+  const client = clients.get(agentId);
+  if (!client) return false;
+  
+  const now = Date.now();
+  const oneMinute = 60 * 1000;
+  
+  // 重置計數器（每分鐘）
+  if (now - client.lastMessageTime > oneMinute) {
+    client.messageCount = 0;
+    client.lastMessageTime = now;
+  }
+  
+  // 檢查限制（每分鐘 10 條）
+  if (client.messageCount >= 10) {
+    return false;
+  }
+  
+  client.messageCount++;
+  return true;
 }
 
 async function storeOfflineMessage(from: string, to: string, content: string, env: Env) {
