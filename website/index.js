@@ -369,7 +369,7 @@ npm run build</pre></div>
             <p>${t.testAgentsDesc}</p>
             <ul>
                 <li><strong>V01</strong>: <code>v01-a67cd3</code> (Vincent's main Agent)</li>
-           <li><strong>N01</strong>: <code>n01-d0b5f6</code> (Vincent's NAS Agent)</li>
+           
           </ul>
         </div>
     </div>
