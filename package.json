@@ -1,34 +1,12 @@
 {
-  "name": "a2a-network",
-  "version": "0.1.0",
-  "description": "Agent-to-Agent Communication Network",
-  "private": true,
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
-  "scripts": {
-    "dev": "npm run dev --workspaces",
-    "dev:directory": "npm run dev -w packages/directory-server",
-    "dev:relay": "npm run dev -w packages/relay-server",
-    "dev:website": "npm run dev -w apps/website",
-    "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces",
-    "deploy:directory": "npm run deploy -w packages/directory-server",
-    "deploy:relay": "npm run deploy -w packages/relay-server",
-    "deploy:website": "npm run deploy -w apps/website"
-  },
-  "keywords": [
-    "a2a",
-    "agent",
-    "communication",
-    "openclaw",
-    "ai"
-  ],
-  "author": "A2A Team",
+  "name": "a2a-skill",
+  "version": "2.0.0",
+  "description": "A2A Network Skill for OpenClaw - Zero Dependencies",
+  "main": "a2a-skill.js",
+  "keywords": ["a2a", "openclaw", "skill", "agent", "communication"],
+  "author": "Vincent & V01",
   "license": "MIT",
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+    "node": ">=16.0.0"
   }
 }
