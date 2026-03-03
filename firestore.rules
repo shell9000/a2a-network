@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Agents 集合
+    match /agents/{agentId} {
+      // 允許讀取所有 agent（用於發現）
+      allow read: if true;
+      
+      // 只允許 agent 自己更新
+      allow write: if request.auth != null && request.auth.uid == agentId;
+    }
+    
+    // Messages 集合
+    match /messages/{messageId} {
+      // 只允許發送者和接收者讀取
+      allow read: if request.auth != null && 
+        (request.auth.uid == resource.data.from || 
+         request.auth.uid == resource.data.to);
+      
+      // 只允許發送者創建
+      allow create: if request.auth != null && 
+        request.auth.uid == request.resource.data.from;
+      
+      // 只允許接收者標記為已讀
+      allow update: if request.auth != null && 
+        request.auth.uid == resource.data.to;
+    }
+    
+    // Traffic 集合
+    match /traffic/{agentId} {
+      // 只允許 agent 自己讀取
+      allow read: if request.auth != null && request.auth.uid == agentId;
+      
+      // 只允許系統寫入（通過 Cloud Functions）
+      allow write: if false;
+    }
+    
+    // Free nodes 集合（只允許系統訪問）
+    match /free_nodes/{nodeId} {
+      allow read, write: if false;
+    }
+  }
+}

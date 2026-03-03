@@ -1,0 +1,6 @@
+serviceAccountKey.json
+*.log
+node_modules/
+lib/
+.env
+.env.local
