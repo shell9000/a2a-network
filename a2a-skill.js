@@ -13,6 +13,11 @@ const fs = require('fs');
 const https = require('https');
 const path = require('path');
 
+// 配置：輪詢間隔（毫秒）
+// 測試環境：10 秒 = 10000
+// 生產環境：15 分鐘 = 900000
+const POLLING_INTERVAL = process.env.A2A_POLLING_INTERVAL || 900000; // 預設 15 分鐘
+
 class A2ASkill {
   constructor() {
     this.configPath = path.join(__dirname, 'a2a-config.json');
@@ -33,14 +38,14 @@ class A2ASkill {
       
       if (response.result) {
         this.config.agentId = response.result.agentId;
-    this.config.apiKey = response.result.apiKey;
-        this.config.name = name;
+        this.config.apiKey = response.result.apiKey;
+     this.config.name = name;
         this.config.owner = owner;
         this.saveConfig();
         return {
           success: true,
-       agentId: response.result.agentId,
-          message: `註冊成功！你嘅 Agent ID 係：${response.result.agentId}`
+          agentId: response.result.agentId,
+      message: `註冊成功！你嘅 Agent ID 係：${response.result.agentId}`
         };
       } else {
         throw new Error(response.error?.message || '註冊失敗');
@@ -48,7 +53,7 @@ class A2ASkill {
     } catch (error) {
       return {
         success: false,
-        error: error.message
+      error: error.message
       };
     }
   }
@@ -58,8 +63,8 @@ class A2ASkill {
    */
   async sendMessage(to, content) {
     if (!this.config.agentId || !this.config.apiKey) {
-    return {
-     success: false,
+      return {
+      success: false,
         error: '未註冊！請先註冊 A2A Network。'
       };
     }
@@ -71,25 +76,25 @@ class A2ASkill {
        data: {
             from: this.config.agentId,
             to,
-            content,
-          apiKey: this.config.apiKey
+      content,
+       apiKey: this.config.apiKey
           }
         }
-    );
+      );
 
       if (response.result) {
         return {
           success: true,
-          message: '訊息已發送！'
+       message: '訊息已發送！'
         };
       } else {
         throw new Error(response.error?.message || '發送失敗');
       }
     } catch (error) {
-      return {
+    return {
         success: false,
         error: error.message
-      };
+    };
     }
   }
 
@@ -106,25 +111,25 @@ class A2ASkill {
 
     try {
       const response = await this.httpPost(
-     'https://us-central1-a2a-network.cloudfunctions.net/getMessages',
+        'https://us-central1-a2a-network.cloudfunctions.net/getMessages',
         {
           data: {
             agentId: this.config.agentId,
             apiKey: this.config.apiKey
-        }
+          }
         }
       );
 
       if (response.result) {
         return {
-       success: true,
+          success: true,
           messages: response.result.messages || []
-      };
+        };
       } else {
         throw new Error(response.error?.message || '接收失敗');
       }
     } catch (error) {
-   return {
+      return {
         success: false,
         error: error.message
       };
@@ -143,42 +148,49 @@ class A2ASkill {
       if (response.result) {
         return {
           success: true,
-          agents: response.result.agents || []
+     agents: response.result.agents || []
         };
       } else {
         throw new Error(response.error?.message || '查詢失敗');
       }
     } catch (error) {
       return {
-        success: false,
+     success: false,
         error: error.message
-    };
+      };
     }
   }
 
   /**
-   * 啟動自動輪詢（每 10 秒檢查一次新訊息）
+   * 啟動自動輪詢
+   * 預設：15 分鐘檢查一次
+   * 測試模式：設置環境變量 A2A_POLLING_INTERVAL=10000（10 秒）
    */
   startPolling(callback) {
     if (this.pollingInterval) {
       return;
     }
 
+    const intervalMs = parseInt(POLLING_INTERVAL);
+    const intervalMin = Math.round(intervalMs / 60000);
+    
+    console.log(`🔄 A2A 輪詢已啟動：每 ${intervalMin} 分鐘檢查一次新訊息`);
+
     this.pollingInterval = setInterval(async () => {
       const result = await this.getMessages();
-      
+    
       if (result.success && result.messages.length > 0) {
         // 只處理新訊息
-        const newMessages = result.messages.filter(
+     const newMessages = result.messages.filter(
           msg => msg.timestamp > this.lastMessageTime
         );
 
-        if (newMessages.length > 0) {
+     if (newMessages.length > 0) {
           this.lastMessageTime = Math.max(...newMessages.map(m => m.timestamp));
           callback(newMessages);
+        }
       }
-      }
-    }, 10000); // 10 秒
+    }, intervalMs);
   }
 
   /**
@@ -188,6 +200,7 @@ class A2ASkill {
     if (this.pollingInterval) {
       clearInterval(this.pollingInterval);
       this.pollingInterval = null;
+      console.log('⏸️  A2A 輪詢已停止');
     }
   }
 
@@ -199,7 +212,8 @@ class A2ASkill {
       agentId: this.config.agentId || null,
       name: this.config.name || null,
       owner: this.config.owner || null,
-    registered: !!(this.config.agentId && this.config.apiKey)
+      registered: !!(this.config.agentId && this.config.apiKey),
+      pollingInterval: `${Math.round(parseInt(POLLING_INTERVAL) / 60000)} 分鐘`
     };
   }
 
@@ -213,11 +227,11 @@ class A2ASkill {
       const options = {
         hostname: urlObj.hostname,
         port: 443,
-      path: urlObj.pathname,
+        path: urlObj.pathname,
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-       'Content-Length': Buffer.byteLength(postData)
+          'Content-Length': Buffer.byteLength(postData)
         }
       };
 
@@ -226,31 +240,31 @@ class A2ASkill {
         res.on('data', chunk => body += chunk);
         res.on('end', () => {
           try {
-         resolve(JSON.parse(body));
+            resolve(JSON.parse(body));
           } catch (e) {
-         reject(new Error('Invalid JSON response'));
+            reject(new Error('Invalid JSON response'));
           }
         });
       });
 
       req.on('error', reject);
-      req.write(postData);
+   req.write(postData);
       req.end();
     });
   }
 
   httpGet(url) {
     return new Promise((resolve, reject) => {
-    https.get(url, (res) => {
+      https.get(url, (res) => {
         let body = '';
         res.on('data', chunk => body += chunk);
         res.on('end', () => {
           try {
             resolve(JSON.parse(body));
         } catch (e) {
-       reject(new Error('Invalid JSON response'));
+         reject(new Error('Invalid JSON response'));
           }
-      });
+        });
       }).on('error', reject);
     });
   }
@@ -279,12 +293,12 @@ class A2ASkill {
 module.exports = {
   name: 'a2a',
   description: 'A2A Network - AI Agent 通訊',
-  version: '2.0.0',
+  version: '2.2.0',
 
   async onLoad() {
     this.a2a = new A2ASkill();
     
-    // 如果已註冊，啟動自動輪詢
+  // 如果已註冊，啟動自動輪詢
     const config = this.a2a.getConfig();
     if (config.registered) {
       this.a2a.startPolling((messages) => {
@@ -314,7 +328,7 @@ module.exports = {
         this.a2a.startPolling((messages) => {
           messages.forEach(msg => {
             this.notify(`📨 A2A 訊息來自 ${msg.from}: ${msg.content}`);
-          });
+        });
         });
       }
       
@@ -323,10 +337,10 @@ module.exports = {
 
     // 發送訊息
     'send_a2a_message': async function(args) {
-      if (!args.to || !args.content) {
+   if (!args.to || !args.content) {
         return {
           success: false,
-          error: '缺少參數：to（接收者 ID）和 content（訊息內容）'
+      error: '缺少參數：to（接收者 ID）和 content（訊息內容）'
         };
       }
       
@@ -346,6 +360,6 @@ module.exports = {
     // 查看配置
     'get_a2a_config': async function() {
       return this.a2a.getConfig();
-  }
+    }
   }
 };
