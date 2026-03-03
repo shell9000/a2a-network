@@ -11,7 +11,7 @@ interface Env {
 // Durable Object: 管理所有 WebSocket 連接
 export class ConnectionManager {
   state: DurableObjectState;
-  clients: Map<string, WebSocket>;
+  clients: Map<string, { socket: WebSocket; apiKey: string }>;
   messageCount: Map<string, { count: number; lastReset: number }>;
 
   constructor(state: DurableObjectState, env: Env) {
@@ -62,13 +62,13 @@ export class ConnectionManager {
             // 簡單驗證（生產環境應該調用 Firebase）
             if (agentId && apiKey) {
               // 移除舊連接（如果存在）
-              const oldSocket = this.clients.get(agentId);
-              if (oldSocket) {
-                oldSocket.close(1000, 'New connection');
+              const oldClient = this.clients.get(agentId);
+              if (oldClient) {
+                oldClient.socket.close(1000, 'New connection');
               }
 
-              // 註冊新連接
-              this.clients.set(agentId, server);
+              // 註冊新連接（保存 socket 和 apiKey）
+              this.clients.set(agentId, { socket: server, apiKey });
               
               console.log(`✅ Agent ${agentId} 已連接，當前在線: ${this.clients.size}`);
               
@@ -152,13 +152,13 @@ export class ConnectionManager {
     
     console.log(`📤 ${fromAgentId} → ${to}: ${content.substring(0, 50)}...`);
 
-    const recipientSocket = this.clients.get(to);
+    const recipient = this.clients.get(to);
 
-    if (recipientSocket) {
+    if (recipient) {
       console.log(`✅ 接收者 ${to} 在線，直接轉發`);
       
       // 發送給接收者
-      recipientSocket.send(JSON.stringify({
+      recipient.socket.send(JSON.stringify({
         type: 'message',
         from: fromAgentId,
         content,
@@ -166,9 +166,9 @@ export class ConnectionManager {
       }));
 
       // 通知發送者：已送達
-      const senderSocket = this.clients.get(fromAgentId);
-      if (senderSocket) {
-        senderSocket.send(JSON.stringify({
+      const sender = this.clients.get(fromAgentId);
+      if (sender) {
+        sender.socket.send(JSON.stringify({
           type: 'message_delivered',
           to,
           timestamp: Date.now()
@@ -177,13 +177,16 @@ export class ConnectionManager {
     } else {
       console.log(`⏸️  接收者 ${to} 離線，存儲訊息`);
       
-      // TODO: 調用 Firebase 存儲離線訊息
-      await this.storeOfflineMessage(fromAgentId, to, content);
+      // 獲取發送者的 apiKey
+      const sender = this.clients.get(fromAgentId);
+      const apiKey = sender?.apiKey || '';
+      
+      // 存儲離線訊息
+      await this.storeOfflineMessage(fromAgentId, to, content, apiKey);
 
       // 通知發送者：已存儲
-      const senderSocket = this.clients.get(fromAgentId);
-      if (senderSocket) {
-        senderSocket.send(JSON.stringify({
+      if (sender) {
+        sender.socket.send(JSON.stringify({
           type: 'message_stored',
           to,
           timestamp: Date.now()
@@ -211,9 +214,33 @@ export class ConnectionManager {
     return true;
   }
 
-  async storeOfflineMessage(from: string, to: string, content: string) {
+  async storeOfflineMessage(from: string, to: string, content: string, apiKey: string) {
     console.log('💾 存儲離線訊息:', { from, to, content: content.substring(0, 50) });
-    // TODO: 實現 Firebase 存儲
+    
+    try {
+      // 調用 Firebase Cloud Function 存儲離線訊息
+      const response = await fetch('https://us-central1-a2a-network.cloudfunctions.net/sendMessage', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          data: {
+            from,
+            to,
+            content,
+            apiKey,
+            timestamp: Date.now()
+          }
+        })
+      });
+      
+      if (!response.ok) {
+        console.error('❌ 存儲離線訊息失敗:', response.statusText);
+      } else {
+        console.log('✅ 離線訊息已存儲到 Firebase');
+      }
+    } catch (error) {
+      console.error('❌ 存儲離線訊息錯誤:', error);
+    }
   }
 }
 
