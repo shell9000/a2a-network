@@ -1,0 +1,24 @@
+{
+  "name": "@a2a/directory-server",
+  "version": "0.1.0",
+  "description": "A2A Directory Server - Firebase Cloud Functions",
+  "main": "lib/index.js",
+  "scripts": {
+    "dev": "firebase emulators:start",
+    "build": "tsc",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "firebase-functions-test": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": "18"
+  }
+}

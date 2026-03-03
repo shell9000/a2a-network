@@ -1,0 +1,35 @@
+{
+  "name": "@a2a/client",
+  "version": "0.1.0",
+  "description": "A2A Client Library - Agent-to-Agent Communication",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "test": "jest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "a2a",
+    "agent",
+    "communication",
+    "websocket"
+  ],
+  "dependencies": {
+    "ws": "^8.16.0",
+    "better-sqlite3": "^9.4.0",
+    "node-fetch": "^3.3.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/node": "^20.0.0",
+    "@types/ws": "^8.5.0",
+    "jest": "^29.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
