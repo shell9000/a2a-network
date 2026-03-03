@@ -1,0 +1,13 @@
+{
+  "name": "a2a-skill-prebuilt",
+  "version": "2.1.0",
+  "description": "A2A Network Skill for OpenClaw - Prebuilt Version",
+  "main": "dist/index.js",
+  "dependencies": {
+    "better-sqlite3": "^9.0.0",
+    "ws": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
