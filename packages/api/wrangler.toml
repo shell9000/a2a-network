@@ -1,0 +1,12 @@
+name = "a2a-api"
+main = "src/index.ts"
+compatibility_date = "2024-03-04"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "a2a-network-db"
+database_id = "fbcacb64-d3e6-49b5-967b-5b533801ba88"
+
+[vars]
+JWT_SECRET = "a2a-network-secret-key-change-in-production"
+RESEND_API_KEY = "re_FpmdMgrV_G9awcYLSC71UpCn5rbkopKrm"

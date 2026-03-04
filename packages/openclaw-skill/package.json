@@ -1,19 +1,16 @@
 {
   "name": "@a2a/openclaw-skill",
-  "version": "0.1.0",
-  "description": "A2A OpenClaw Skill - Agent-to-Agent Communication",
+  "version": "1.0.0",
+  "description": "OpenClaw skill for A2A Network",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "test": "echo \"No tests yet\""
+    "dev": "tsc --watch",
+    "example": "npm run build && node dist/example.js"
   },
-  "dependencies": {
-    "@a2a/client": "workspace:*"
-  },
+  "dependencies": {},
   "devDependencies": {
-    "@types/node": "^20.0.0",
-    "tsx": "^4.7.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
   }
 }
