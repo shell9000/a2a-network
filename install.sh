@@ -104,11 +104,35 @@ register_agent() {
     
     cd /opt/a2a-client/packages/client
     
-    # Generate agent name from hostname
-    AGENT_NAME=$(hostname | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
+    # Create register script
+    cat > register.js <<'EOFREG'
+const { A2AClient } = require('./dist/index');
+
+async function register() {
+  const hostname = require('os').hostname().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  
+  const client = new A2AClient({
+    dbPath: '/opt/a2a-client/agent.db',
+    relayUrl: 'wss://a2a-relay.shell9000.workers.dev'
+  });
+  
+  // Generate short agent ID
+  const randomId = Math.random().toString(36).substring(2, 8);
+  const agentId = `${hostname}-${randomId}`;
+  
+  console.log(`Agent ID: ${agentId}`);
+  console.log(`API Key: sk_${Math.random().toString(36).substring(2)}`);
+  
+  // Save to file
+  const fs = require('fs');
+  fs.writeFileSync('/opt/a2a-client/.env', `AGENT_ID=${agentId}\nAPI_KEY=sk_${Math.random().toString(36).substring(2)}\n`);
+}
+
+register().catch(console.error);
+EOFREG
     
-    # Register
-    REGISTER_OUTPUT=$(node dist/register.js "$AGENT_NAME" 2>&1)
+    # Run register
+    REGISTER_OUTPUT=$(node register.js 2>&1)
     
     # Extract Agent ID and API Key
     AGENT_ID=$(echo "$REGISTER_OUTPUT" | grep -oP 'Agent ID: \K[^\s]+' || echo "")
@@ -120,10 +144,43 @@ register_agent() {
     fi
     
     print_step "Agent registered: $AGENT_ID"
+}
+
+create_listener() {
+    print_info "Creating listener script..."
     
-    # Save credentials
-    echo "AGENT_ID=$AGENT_ID" > /opt/a2a-client/.env
-    echo "API_KEY=$API_KEY" >> /opt/a2a-client/.env
+    cd /opt/a2a-client/packages/client
+    
+    # Create listener script
+    cat > listener.js <<'EOFLIST'
+const { A2AClient } = require('./dist/index');
+const fs = require('fs');
+
+// Load credentials
+const env = fs.readFileSync('/opt/a2a-client/.env', 'utf-8');
+const agentId = env.match(/AGENT_ID=(.+)/)[1];
+
+const client = new A2AClient({
+  dbPath: '/opt/a2a-client/agent.db',
+  relayUrl: 'wss://a2a-relay.shell9000.workers.dev'
+});
+
+async function start() {
+  console.log('🚀 啟動 A2A 監聽程序...');
+  await client.connect();
+  console.log('✅ 已連接到 A2A Network');
+  console.log('📡 持續監聽訊息中...');
+  
+  client.on('message', (msg) => {
+    console.log(`\n📨 收到訊息來自 ${msg.from}:`);
+    console.log(`   ${msg.content}`);
+  });
+}
+
+start().catch(console.error);
+EOFLIST
+    
+    print_step "Listener script created"
 }
 
 create_systemd_service() {
@@ -191,6 +248,7 @@ main() {
     download_a2a_client
     build_client
     register_agent
+    create_listener
     create_systemd_service
     show_summary
 }
