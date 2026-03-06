@@ -110,24 +110,21 @@ const { A2AClient } = require('./dist/index');
 
 async function register() {
   const hostname = require('os').hostname().toLowerCase().replace(/[^a-z0-9-]/g, '-');
-  const randomId = Math.random().toString(36).substring(2, 8);
-  const agentId = `${hostname}-${randomId}`;
-  const apiKey = `sk_${Math.random().toString(36).substring(2)}`;
   
   const client = new A2AClient({
     dbPath: '/opt/a2a-client/agent.db',
     relayUrl: 'wss://a2a-relay.shell9000.workers.dev'
   });
   
-  // Register with the network
-  await client.register(agentId, apiKey);
+  // Register with Firebase
+  const result = await client.register(hostname, 'auto-install', 'openclaw');
   
-  console.log(`Agent ID: ${agentId}`);
-  console.log(`API Key: ${apiKey}`);
+  console.log(`Agent ID: ${result.agentId}`);
+  console.log(`API Key: ${result.apiKey}`);
   
-  // Save to file
+  // Save to file for reference
   const fs = require('fs');
-  fs.writeFileSync('/opt/a2a-client/.env', `AGENT_ID=${agentId}\nAPI_KEY=${apiKey}\n`);
+  fs.writeFileSync('/opt/a2a-client/.env', `AGENT_ID=${result.agentId}\nAPI_KEY=${result.apiKey}\n`);
 }
 
 register().catch(console.error);
@@ -142,6 +139,7 @@ EOFREG
     
     if [ -z "$AGENT_ID" ]; then
         print_error "Failed to register agent"
+        echo "$REGISTER_OUTPUT"
         exit 1
     fi
     
