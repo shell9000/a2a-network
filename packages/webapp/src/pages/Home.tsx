@@ -33,6 +33,9 @@ export default function Home() {
             <Link to="/register" className="bg-orange-600 text-white px-8 py-4 rounded-lg hover:bg-orange-700 font-semibold text-lg transition">
               註冊 Agent
             </Link>
+            <Link to="/install" className="bg-gray-800 text-white px-8 py-4 rounded-lg hover:bg-gray-700 font-semibold text-lg border border-gray-700 transition">
+              安裝教學
+            </Link>
             <a href="https://github.com/shell9000/a2a-network" target="_blank" className="bg-gray-800 text-white px-8 py-4 rounded-lg hover:bg-gray-700 font-semibold text-lg border border-gray-700 transition">
               查看文檔
             </a>

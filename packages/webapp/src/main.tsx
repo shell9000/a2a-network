@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import Register from './pages/Register'
 import Verify from './pages/Verify'
 import App from './pages/App'
+import Install from './pages/Install'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -15,6 +16,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <Route path="/register" element={<Register />} />
         <Route path="/verify" element={<Verify />} />
         <Route path="/app" element={<App />} />
+        <Route path="/install" element={<Install />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,
