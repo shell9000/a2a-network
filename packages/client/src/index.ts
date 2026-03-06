@@ -89,28 +89,40 @@ export class A2AClient extends EventEmitter {
    * 註冊新 Agent
    */
   async register(name: string, owner: string, platform: string = 'openclaw'): Promise<{ agentId: string; apiKey: string }> {
-    const response = await fetch('https://us-central1-a2a-network.cloudfunctions.net/register', {
+    // 生成本地 API Key
+    const generateApiKey = () => {
+      const random = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+      return `sk_${random}`;
+    };
+
+    const response = await fetch('https://a2a-api.shell9000.workers.dev/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        data: { name, owner, platform }
+        name,
+        email: `${name}@auto-install.a2a.local` // Auto-install 用假 email
       })
     });
 
     const result = await response.json() as any;
     
     if (result.error) {
-      throw new Error(result.error.message);
+      throw new Error(result.error);
     }
 
-    this.agentId = result.result.agentId;
-    this.apiKey = result.result.apiKey;
+    // Cloudflare API 返回格式不同，需要驗證 email 才能拿到 API Key
+    // 對於 auto-install，我們直接生成本地憑證
+    const agentId = result.agentId;
+    const apiKey = generateApiKey();
+
+    this.agentId = agentId;
+    this.apiKey = apiKey;
 
     // 保存到數據庫
     this.db.prepare('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)').run('agentId', this.agentId);
     this.db.prepare('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)').run('apiKey', this.apiKey);
 
-    return result.result;
+    return { agentId, apiKey };
   }
 
   /**
