@@ -86,7 +86,6 @@ download_a2a_client() {
         git pull -q
     else
         git clone -q https://github.com/shell9000/a2a-network.git "$A2A_DIR"
-        cd "$A2A_DIR/client"
     fi
     
     print_step "A2A Client downloaded"
@@ -94,7 +93,7 @@ download_a2a_client() {
 
 build_client() {
     print_info "Building A2A Client..."
-    cd /opt/a2a-client/client
+    cd /opt/a2a-client/packages/client
     npm install --silent
     npm run build --silent
     print_step "A2A Client built"
