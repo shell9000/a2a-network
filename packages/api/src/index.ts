@@ -288,6 +288,15 @@ app.get('/api/messages/check', async (c) => {
       'SELECT id, from_agent, content, created_at FROM messages WHERE to_agent = ? AND read = 0 ORDER BY created_at DESC LIMIT 50'
     ).bind(agent.id).all();
 
+    // 標記為已讀
+    if (messages.results.length > 0) {
+      const messageIds = messages.results.map((m: any) => m.id);
+      const placeholders = messageIds.map(() => '?').join(',');
+      await c.env.DB.prepare(
+        `UPDATE messages SET read = 1 WHERE id IN (${placeholders})`
+      ).bind(...messageIds).run();
+    }
+
     return c.json({
       success: true,
       newMessages: messages.results.length,
