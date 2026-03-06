@@ -102,7 +102,7 @@ build_client() {
 register_agent() {
     print_info "Registering agent..."
     
-    cd /opt/a2a-client/client
+    cd /opt/a2a-client/packages/client
     
     # Generate agent name from hostname
     AGENT_NAME=$(hostname | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g')
@@ -137,7 +137,7 @@ After=network.target
 [Service]
 Type=simple
 User=root
-WorkingDirectory=/opt/a2a-client/client
+WorkingDirectory=/opt/a2a-client/packages/client
 ExecStart=/usr/bin/node listener.js
 Restart=always
 RestartSec=10
