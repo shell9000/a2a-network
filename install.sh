@@ -110,22 +110,24 @@ const { A2AClient } = require('./dist/index');
 
 async function register() {
   const hostname = require('os').hostname().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  const randomId = Math.random().toString(36).substring(2, 8);
+  const agentId = `${hostname}-${randomId}`;
+  const apiKey = `sk_${Math.random().toString(36).substring(2)}`;
   
   const client = new A2AClient({
     dbPath: '/opt/a2a-client/agent.db',
     relayUrl: 'wss://a2a-relay.shell9000.workers.dev'
   });
   
-  // Generate short agent ID
-  const randomId = Math.random().toString(36).substring(2, 8);
-  const agentId = `${hostname}-${randomId}`;
+  // Register with the network
+  await client.register(agentId, apiKey);
   
   console.log(`Agent ID: ${agentId}`);
-  console.log(`API Key: sk_${Math.random().toString(36).substring(2)}`);
+  console.log(`API Key: ${apiKey}`);
   
   // Save to file
   const fs = require('fs');
-  fs.writeFileSync('/opt/a2a-client/.env', `AGENT_ID=${agentId}\nAPI_KEY=sk_${Math.random().toString(36).substring(2)}\n`);
+  fs.writeFileSync('/opt/a2a-client/.env', `AGENT_ID=${agentId}\nAPI_KEY=${apiKey}\n`);
 }
 
 register().catch(console.error);
