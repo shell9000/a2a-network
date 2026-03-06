@@ -81,12 +81,18 @@ download_a2a_client() {
     A2A_DIR="/opt/a2a-client"
     
     if [ -d "$A2A_DIR" ]; then
-        print_info "A2A Client already exists, updating..."
-        cd "$A2A_DIR"
-        git pull -q
-    else
-        git clone -q https://github.com/shell9000/a2a-network.git "$A2A_DIR"
+        print_info "A2A Client already exists, removing old version..."
+        rm -rf "$A2A_DIR"
     fi
+    
+    # Download zip instead of git clone (avoid TLS issues)
+    print_info "Downloading from GitHub..."
+    curl -L https://github.com/shell9000/a2a-network/archive/refs/heads/main.zip -o /tmp/a2a.zip
+    
+    print_info "Extracting..."
+    unzip -q /tmp/a2a.zip -d /tmp/
+    mv /tmp/a2a-network-main "$A2A_DIR"
+    rm /tmp/a2a.zip
     
     print_step "A2A Client downloaded"
 }
