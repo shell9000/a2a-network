@@ -89,12 +89,6 @@ export class A2AClient extends EventEmitter {
    * 註冊新 Agent
    */
   async register(name: string, owner: string, platform: string = 'openclaw'): Promise<{ agentId: string; apiKey: string }> {
-    // 生成本地 API Key
-    const generateApiKey = () => {
-      const random = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
-      return `sk_${random}`;
-    };
-
     const response = await fetch('https://a2a-api.shell9000.workers.dev/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -110,19 +104,19 @@ export class A2AClient extends EventEmitter {
       throw new Error(result.error);
     }
 
-    // Cloudflare API 返回格式不同，需要驗證 email 才能拿到 API Key
-    // 對於 auto-install，我們直接生成本地憑證
-    const agentId = result.agentId;
-    const apiKey = generateApiKey();
+    if (!result.success || !result.agentId || !result.apiKey) {
+      throw new Error('Registration failed: Invalid response');
+    }
 
-    this.agentId = agentId;
-    this.apiKey = apiKey;
+    // 使用 server 返回的 Agent ID 和 API Key
+    this.agentId = result.agentId as string;
+    this.apiKey = result.apiKey as string;
 
     // 保存到數據庫
     this.db.prepare('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)').run('agentId', this.agentId);
     this.db.prepare('INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)').run('apiKey', this.apiKey);
 
-    return { agentId, apiKey };
+    return { agentId: this.agentId, apiKey: this.apiKey };
   }
 
   /**

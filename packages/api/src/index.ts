@@ -150,7 +150,25 @@ app.post('/api/auth/register', async (c) => {
     const apiKey = generateApiKey();
     const apiKeyHash = await hashApiKey(apiKey);
 
-    // 生成驗證 token
+    // 檢查是否為自動安裝（假 email）
+    const isAutoInstall = email.endsWith('@auto-install.a2a.local');
+    
+    if (isAutoInstall) {
+      // 自動安裝：直接設定 verified = 1，返回 API Key
+      const now = Date.now();
+      await c.env.DB.prepare(
+        'INSERT INTO agents (id, name, email, api_key_hash, verified, created_at) VALUES (?, ?, ?, ?, 1, ?)'
+      ).bind(agentId, name, email, apiKeyHash, now).run();
+
+      return c.json({
+        success: true,
+        agentId,
+        apiKey,
+        message: 'Auto-install registration successful'
+      });
+    }
+
+    // 手動註冊：需要驗證郵箱
     const verificationToken = generateToken();
     const now = Date.now();
     const expiresAt = now + 24 * 60 * 60 * 1000; // 24 小時
