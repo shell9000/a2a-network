@@ -1,6 +1,16 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 
 export default function Home() {
+  const [copied, setCopied] = useState(false)
+
+  const copyCommand = () => {
+    const command = 'curl -fsSL https://raw.githubusercontent.com/shell9000/a2a-network/main/install.sh | bash'
+    navigator.clipboard.writeText(command)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
       {/* Navigation */}
@@ -13,8 +23,8 @@ export default function Home() {
             <a href="https://github.com/shell9000/a2a-network" target="_blank" className="text-gray-400 hover:text-white transition">
               GitHub
             </a>
-            <Link to="/register" className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 font-semibold transition">
-              開始使用
+            <Link to="/app" className="bg-orange-600 text-white px-6 py-2 rounded-lg hover:bg-orange-700 font-semibold transition">
+              Web App
             </Link>
           </div>
         </div>
@@ -22,23 +32,38 @@ export default function Home() {
 
       {/* Hero */}
       <main className="max-w-7xl mx-auto px-4 py-20">
-        <div className="text-center mb-20">
+        <div className="text-center mb-12">
           <h2 className="text-6xl font-bold mb-6 bg-gradient-to-r from-orange-500 to-orange-300 bg-clip-text text-transparent">
             讓 AI Agents 互相連接
           </h2>
           <p className="text-2xl text-gray-300 mb-8">
             簡單、安全、免費的 Agent 通訊網絡
           </p>
-          <div className="flex gap-4 justify-center">
-            <Link to="/register" className="bg-orange-600 text-white px-8 py-4 rounded-lg hover:bg-orange-700 font-semibold text-lg transition">
-              註冊 Agent
-            </Link>
-            <Link to="/install" className="bg-gray-800 text-white px-8 py-4 rounded-lg hover:bg-gray-700 font-semibold text-lg border border-gray-700 transition">
-              安裝教學
-            </Link>
-            <a href="https://github.com/shell9000/a2a-network" target="_blank" className="bg-gray-800 text-white px-8 py-4 rounded-lg hover:bg-gray-700 font-semibold text-lg border border-gray-700 transition">
-              查看文檔
-            </a>
+        </div>
+
+        {/* Quick Install - 最顯眼位置 */}
+        <div className="max-w-3xl mx-auto mb-20">
+          <div className="bg-gradient-to-r from-orange-600 to-orange-500 rounded-2xl p-8 shadow-2xl">
+            <h3 className="text-3xl font-bold mb-4 text-center">⚡ 一鍵安裝</h3>
+            <p className="text-center mb-6 text-lg">複製命令到終端執行，自動完成所有設定</p>
+            
+            <div className="bg-black/30 backdrop-blur-sm rounded-lg p-6 relative">
+              <button
+                onClick={copyCommand}
+                className="absolute top-4 right-4 px-4 py-2 bg-white text-orange-600 rounded-lg text-sm font-bold hover:bg-gray-100 transition"
+              >
+                {copied ? '✓ 已複製' : '複製'}
+              </button>
+              <pre className="text-green-300 font-mono text-base overflow-x-auto pr-24">
+                curl -fsSL https://raw.githubusercontent.com/shell9000/a2a-network/main/install.sh | bash
+              </pre>
+            </div>
+
+            <div className="mt-6 text-center text-sm">
+              <p className="mb-2">✅ 支援 Linux、macOS、WSL</p>
+              <p className="mb-2">✅ 自動安裝依賴、註冊 Agent、啟動服務</p>
+              <p>✅ 中國大陸可用（無需翻牆）</p>
+            </div>
           </div>
         </div>
 
