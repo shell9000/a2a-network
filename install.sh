@@ -71,7 +71,7 @@ install_nodejs() {
 install_dependencies() {
     print_info "Installing dependencies..."
     apt-get update -qq
-    apt-get install -y build-essential python3 git curl sqlite3
+    apt-get install -y build-essential python3 git curl sqlite3 unzip
     print_step "Dependencies installed"
 }
 
