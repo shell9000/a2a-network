@@ -32,28 +32,28 @@ class A2ASkill {
   async register(name, owner) {
     try {
       const response = await this.httpPost(
-        'https://us-central1-a2a-network.cloudfunctions.net/register',
-        { data: { name, owner, platform: 'openclaw' } }
+        'https://a2a-api.shell9000.workers.dev/api/auth/register',
+        { name, email: `${name}@auto-install.a2a.local` }
       );
       
-      if (response.result) {
-        this.config.agentId = response.result.agentId;
-        this.config.apiKey = response.result.apiKey;
-     this.config.name = name;
+      if (response.success) {
+        this.config.agentId = response.agentId;
+        this.config.apiKey = response.apiKey || 'pending-verification';
+        this.config.name = name;
         this.config.owner = owner;
         this.saveConfig();
         return {
           success: true,
-          agentId: response.result.agentId,
-      message: `註冊成功！你嘅 Agent ID 係：${response.result.agentId}`
+          agentId: response.agentId,
+          message: `註冊成功！你嘅 Agent ID 係：${response.agentId}。請檢查郵箱驗證以獲得 API Key。`
         };
       } else {
-        throw new Error(response.error?.message || '註冊失敗');
+        throw new Error(response.error || '註冊失敗');
       }
     } catch (error) {
       return {
         success: false,
-      error: error.message
+        error: error.message
       };
     }
   }
@@ -64,37 +64,31 @@ class A2ASkill {
   async sendMessage(to, content) {
     if (!this.config.agentId || !this.config.apiKey) {
       return {
-      success: false,
+        success: false,
         error: '未註冊！請先註冊 A2A Network。'
       };
     }
 
     try {
       const response = await this.httpPost(
-        'https://us-central1-a2a-network.cloudfunctions.net/sendMessage',
-        {
-       data: {
-            from: this.config.agentId,
-            to,
-      content,
-       apiKey: this.config.apiKey
-          }
-        }
+        'https://a2a-api.shell9000.workers.dev/api/messages',
+        { to, content },
+        { 'Authorization': `Bearer ${this.config.apiKey}` }
       );
 
-      if (response.result) {
+      if (response.success) {
         return {
           success: true,
-       message: '訊息已發送！'
+          message: '訊息已發送！'
         };
       } else {
-        throw new Error(response.error?.message || '發送失敗');
+        throw new Error(response.error || '發送失敗');
       }
     } catch (error) {
-    return {
+      return {
         success: false,
         error: error.message
-    };
+      };
     }
   }
 
@@ -110,23 +104,18 @@ class A2ASkill {
     }
 
     try {
-      const response = await this.httpPost(
-        'https://us-central1-a2a-network.cloudfunctions.net/getMessages',
-        {
-          data: {
-            agentId: this.config.agentId,
-            apiKey: this.config.apiKey
-          }
-        }
+      const response = await this.httpGet(
+        'https://a2a-api.shell9000.workers.dev/api/messages/check',
+        { 'Authorization': `Bearer ${this.config.apiKey}` }
       );
 
-      if (response.result) {
+      if (response.success) {
         return {
           success: true,
-          messages: response.result.messages || []
+          messages: response.messages || []
         };
       } else {
-        throw new Error(response.error?.message || '接收失敗');
+        throw new Error(response.error || '接收失敗');
       }
     } catch (error) {
       return {
@@ -142,20 +131,20 @@ class A2ASkill {
   async getDirectory() {
     try {
       const response = await this.httpGet(
-        'https://us-central1-a2a-network.cloudfunctions.net/getDirectory'
+        'https://a2a-api.shell9000.workers.dev/health'
       );
 
-      if (response.result) {
+      if (response.status === 'ok') {
         return {
           success: true,
-     agents: response.result.agents || []
+          message: 'API 正常運行'
         };
       } else {
-        throw new Error(response.error?.message || '查詢失敗');
+        throw new Error('查詢失敗');
       }
     } catch (error) {
       return {
-     success: false,
+        success: false,
         error: error.message
       };
     }
@@ -219,7 +208,7 @@ class A2ASkill {
 
   // ===== Helper Functions =====
 
-  httpPost(url, data) {
+  httpPost(url, data, headers = {}) {
     return new Promise((resolve, reject) => {
       const urlObj = new URL(url);
       const postData = JSON.stringify(data);
@@ -231,7 +220,8 @@ class A2ASkill {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(postData)
+          'Content-Length': Buffer.byteLength(postData),
+          ...headers
         }
       };
 
@@ -248,24 +238,39 @@ class A2ASkill {
       });
 
       req.on('error', reject);
-   req.write(postData);
+      req.write(postData);
       req.end();
     });
   }
 
-  httpGet(url) {
+  httpGet(url, headers = {}) {
     return new Promise((resolve, reject) => {
-      https.get(url, (res) => {
+      const urlObj = new URL(url);
+      
+      const options = {
+        hostname: urlObj.hostname,
+        port: 443,
+        path: urlObj.pathname + urlObj.search,
+        method: 'GET',
+        headers: {
+          ...headers
+        }
+      };
+
+      const req = https.request(options, (res) => {
         let body = '';
         res.on('data', chunk => body += chunk);
         res.on('end', () => {
           try {
             resolve(JSON.parse(body));
-        } catch (e) {
-         reject(new Error('Invalid JSON response'));
+          } catch (e) {
+            reject(new Error('Invalid JSON response'));
           }
         });
-      }).on('error', reject);
+      });
+
+      req.on('error', reject);
+      req.end();
     });
   }
 
