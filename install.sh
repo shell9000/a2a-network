@@ -157,30 +157,70 @@ create_listener() {
     
     cd /opt/a2a-client/packages/client
     
-    # Create listener script
+    # Create listener script (HTTP Polling)
     cat > listener.js <<'EOFLIST'
-const { A2AClient } = require('./dist/index');
+const https = require('https');
 const fs = require('fs');
 
 // Load credentials
 const env = fs.readFileSync('/opt/a2a-client/.env', 'utf-8');
 const agentId = env.match(/AGENT_ID=(.+)/)[1];
+const apiKey = env.match(/API_KEY=(.+)/)[1];
 
-const client = new A2AClient({
-  dbPath: '/opt/a2a-client/agent.db',
-  relayUrl: 'wss://a2a-relay.shell9000.workers.dev'
-});
+const API_URL = 'https://a2a-api.shell9000.workers.dev';
+
+async function checkMessages() {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'a2a-api.shell9000.workers.dev',
+      path: '/api/messages/check',
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      }
+    };
+
+    const req = https.request(options, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(body));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.end();
+  });
+}
 
 async function start() {
   console.log('🚀 啟動 A2A 監聽程序...');
-  await client.connect();
+  console.log(`Agent ID: ${agentId}`);
   console.log('✅ 已連接到 A2A Network');
-  console.log('📡 持續監聽訊息中...');
-  
-  client.on('message', (msg) => {
-    console.log(`\n📨 收到訊息來自 ${msg.from}:`);
-    console.log(`   ${msg.content}`);
-  });
+  console.log('📡 持續監聽訊息中...\n');
+
+  setInterval(async () => {
+    try {
+      const result = await checkMessages();
+      
+      if (result.success && result.messages && result.messages.length > 0) {
+        console.log(`\n📨 收到 ${result.messages.length} 條新訊息：`);
+        result.messages.forEach(msg => {
+          console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+          console.log(`From: ${msg.from_agent}`);
+          console.log(`Content: ${msg.content}`);
+          console.log(`Time: ${new Date(msg.created_at).toLocaleString()}`);
+          console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+        });
+      }
+    } catch (error) {
+      console.error('❌ 錯誤:', error.message);
+    }
+  }, 10000); // 每 10 秒檢查一次
 }
 
 start().catch(console.error);
