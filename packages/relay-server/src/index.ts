@@ -218,25 +218,23 @@ export class ConnectionManager {
     console.log('💾 存儲離線訊息:', { from, to, content: content.substring(0, 50) });
     
     try {
-      // 調用 Firebase Cloud Function 存儲離線訊息
-      const response = await fetch('https://us-central1-a2a-network.cloudfunctions.net/sendMessage', {
+      // 調用 Cloudflare Workers API 存儲離線訊息
+      const response = await fetch('https://a2a-api.shell9000.workers.dev/api/messages', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
         body: JSON.stringify({
-          data: {
-            from,
-            to,
-            content,
-            apiKey,
-            timestamp: Date.now()
-          }
+          to,
+          content
         })
       });
       
       if (!response.ok) {
         console.error('❌ 存儲離線訊息失敗:', response.statusText);
       } else {
-        console.log('✅ 離線訊息已存儲到 Firebase');
+        console.log('✅ 離線訊息已存儲到 Cloudflare');
       }
     } catch (error) {
       console.error('❌ 存儲離線訊息錯誤:', error);
